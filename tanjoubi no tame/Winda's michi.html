@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Winda's Photobooth Journey</title>
+    <style>
+        :root {
+            --booth-bg: #ffecf2;
+            --booth-stripe: #ffe0e9;
+            --frame-color: #ffffff;
+            --text-dark: #333333;
+            --accent-color: #ff477e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: repeating-linear-gradient(0deg, var(--booth-bg), var(--booth-bg) 40px, var(--booth-stripe) 40px, var(--booth-stripe) 80px);
+            font-family: 'Courier Prime', monospace;
+            color: var(--text-dark);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%; max-width: 480px; height: 100vh; max-height: 900px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-left: 8px solid rgba(255,255,255,0.7); border-right: 8px solid rgba(255,255,255,0.7);
+            box-shadow: 0 0 40px rgba(0,0,0,0.15);
+            position: relative; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+        }
+        .app-container::-webkit-scrollbar { width: 0px; }
+
+        .screen {
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            min-height: 100%; padding: 30px 20px;
+            animation: fadeZoom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .active { display: flex; }
+
+        @keyframes fadeZoom {
+            0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        h1 { font-family: cursive; font-size: 1.2rem; color: var(--accent-color); text-align: center; line-height: 1.6; margin-bottom: 20px; text-shadow: 2px 2px 0px #fff; }
+        p { text-align: center; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; font-weight: bold;}
+
+        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
+        .btn {
+            background: var(--frame-color); color: var(--accent-color);
+            border: 2px dashed var(--accent-color); padding: 15px 20px; width: 85%;
+            font-size: 0.7rem; border-radius: 10px;
+            cursor: pointer; box-shadow: 4px 4px 0px rgba(255, 71, 126, 0.2);
+            transition: all 0.2s; text-align: center; font-weight: bold;
+        }
+        .btn:hover { background: var(--accent-color); color: #fff; border-style: solid; }
+        .btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        select.btn { appearance: none; text-align: center; outline: none; }
+
+        .polaroid {
+            background: #fff; padding: 10px 10px 30px 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transform: rotate(-2deg); margin-bottom: 30px; width: 80%; max-width: 280px; border: 1px solid #eee; transition: transform 0.3s;
+        }
+        .polaroid:hover { transform: rotate(1deg) scale(1.05); }
+        .polaroid-img { width: 100%; height: 200px; background-color: #ddd; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8rem; border: 1px solid #ddd; }
+        .polaroid-caption { text-align: center; margin-top: 15px; font-family: 'Courier Prime', monospace; font-weight: bold; font-size: 0.9rem; color: #555; }
+
+        .film-strip { background: #222; padding: 20px 15px; width: 90%; border-radius: 10px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+        .film-strip::before, .film-strip::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 15px;
+            background-image: radial-gradient(#fff 40%, transparent 40%); background-size: 15px 30px; background-position: 0 0;
+        }
+        .film-strip::before { left: 5px; } .film-strip::after { right: 5px; }
+        .film-frame { background: #fff; padding: 5px; border-radius: 2px; margin: 0 25px; }
+        .film-caption { color: #fff; text-align: center; font-size: 0.75rem; margin-top: 5px; padding: 0 25px; }
+
+        .game-board {
+            width: 90%; height: 320px; background: rgba(255, 255, 255, 0.6);
+            border: 3px dashed var(--accent-color); border-radius: 15px; position: relative;
+            overflow: hidden; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; padding: 15px;
+        }
+
+        .target-item { position: absolute; font-size: 2.5rem; cursor: pointer; user-select: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2)); }
+        .gift-box { font-size: 3rem; cursor: pointer; transition: transform 0.2s; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2)); }
+        .gift-box:active { transform: scale(0.8) rotate(10deg); }
+
+        .memory-card {
+            width: 60px; height: 75px; background: var(--accent-color);
+            border-radius: 8px; display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; cursor: pointer; transition: transform 0.3s; transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .memory-card.flipped { background: #fff; border: 2px solid var(--accent-color); transform: rotateY(180deg); }
+        .memory-card span { display: none; transform: rotateY(180deg); }
+        .memory-card.flipped span { display: block; }
+
+        .hud { background: var(--accent-color); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 0.7rem; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(255, 71, 126, 0.4); font-weight: bold; }
+        .hidden { display: none !important; }
+
+        .floating-score {
+            position: absolute; color: var(--accent-color); font-weight: bold; font-size: 1rem;
+            animation: floatUpScore 0.8s forwards; pointer-events: none; z-index: 50; text-shadow: 1px 1px 0 #fff;
+        }
+        @keyframes floatUpScore {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.5); }
+        }
+
+        #confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100; }
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop=""><source src="lagu-romantis-1.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-pop"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-win"><source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_c6ccf3232f.mp3" type="audio/mpeg"></audio>
+
+    <div class="app-container">
+        <div id="confetti-container"></div>
+
+        <div id="main-menu" class="screen active">
+            <div class="polaroid" style="transform: rotate(3deg); margin-bottom: 40px;">
+                <div class="polaroid-img" style="background-image: url('IMG-20260218-WA0124.jpg');"></div>
+                <div class="polaroid-caption">For Windaaaaanyaaa faiiiiii ❤️</div>
+            </div>
+            
+            <h1>私たち の <br>人生 の 旅路</h1>
+            <p>Pilih lagu untuk menemani perjalanan kita:</p>
+            
+            <div class="btn-group">
+                <select id="bgm-select" class="btn">
+                    <option value="dekat-di-hati.mp3">Lagu 1: RAN - Dekat Di Hati</option>
+                    <option value="celengan-rindu.mp3">Lagu 2: Fiersa Besari - Celengan Rindu</option>
+                    <option value="kangen.mp3">Lagu 3: Dewa 19 - Kangen</option>
+                    <option value="ldr.mp3">Lagu 4: Raisa - LDR</option>
+                    <option value="https://cdn.pixabay.com/download/audio/2022/10/25/audio_24e39ec2e9.mp3">Lagu 5: Romantis Piano (Default)</option>
+                </select>
+                <button class="btn" onclick="showScreen('game-select-screen')">MULAI PETUALANGAN</button>
+                <button class="btn" onclick="showScreen('map-screen')">JEJAK FOTO - FOTO KITA</button>
+            </div>
+        </div>
+
+        <div id="game-select-screen" class="screen">
+            <h1>Pilih Game</h1>
+            <p style="font-size: 0.75rem;">Selesaikan 3 stage Cintaaa biar dapet hadiahnya ❤️</p>
+            <div class="btn-group" style="margin-top: 15px;">
+                <button class="btn" onclick="startGame('catch')">🕹️ 1. TANGKAP HATI</button>
+                <button class="btn" onclick="startGame('guess')">🎁 2. TEBAK KADO</button>
+                <button class="btn" onclick="startGame('memory')">🃏 3. COCOKKAN KARTU</button>
+                <button class="btn" onclick="startGame('spam')">⚡ 4. KLIK HATI CEPAT</button>
+                <button class="btn" onclick="startGame('find')">💍 5. CARI CINCIN</button>
+                <button class="btn" onclick="startGame('avoid')">💔 6. AWAS PATAH HATI</button>
+                <button class="btn" onclick="startGame('run')">🏃 7. KEJAR HATI</button>
+                <button class="btn" onclick="startGame('order')">🔢 8. URUTAN CINTA</button>
+                <button class="btn" onclick="startGame('jp')">🎌 9. KANJI CINTA</button>
+                <button class="btn" onclick="startGame('tiny')">🔬 10. HATI MIKRO</button>
+                <button class="btn" style="background: transparent; border-color: transparent; color: #999; box-shadow: none;" onclick="showScreen('main-menu')">Kembali</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <h1 id="stage-title">Level 1</h1>
+            <div class="hud">SCORE: <span id="score">0</span> / <span id="target-score">5</span></div>
+            
+            <div id="game-catch" class="game-board hidden">
+                <div id="target" class="target-item hidden" onclick="hitCatchTarget(event)">💖</div>
+            </div>
+            <div id="game-guess" class="game-board hidden"></div>
+            <div id="game-memory" class="game-board hidden"></div>
+            <div id="game-dynamic" class="game-board hidden"></div>
+        </div>
+
+        <div id="achievement-screen" class="screen">
+            <h1>Stage Clear!</h1>
+            <div class="polaroid">
+                <div class="polaroid-img" id="reward-photo" style="background-image: url('IMG-20260115-WA0048.jpg');"></div>
+                <div class="polaroid-caption" id="reward-caption">Moment Shigoto Kita</div>
+            </div>
+            <p id="stage-message" style="margin-top: 10px;">Pesan romantis di sini...</p>
+            <button class="btn" onclick="nextStage()">LANJUTKAN</button>
+        </div>
+
+        <div id="ending-screen" class="screen">
+            <h1 style="color: #ff477e; font-size: 1.5rem;">Happy 19th Birthday!</h1>
+            <h2 style="font-size: 0.9rem; color: #333; margin-bottom: 20px; text-align: center;">Winda Ade Vajarita</h2>
+            <div class="polaroid" style="transform: rotate(0deg); width: 90%; max-width: 320px;">
+                <div class="polaroid-img" style="background-image: url('foto-ultah.jpg'); height: 220px;">[Foto Spesial Ultah]</div>
+                <div class="polaroid-caption">I Love You! ❤️</div>
+            </div>
+            <p style="font-size: 0.85rem; padding: 15px; background: rgba(255,255,255,0.8); border-radius: 10px;">
+                Semoga di umur yang ke-19 ini, kamu semakin bahagia, sehat selalu, dan semua yang kamu impikan tercapai. Makasih udah jadi bagian terpenting di hidupku.
+            </p>
+            <button class="btn" style="margin-top: 20px;" onclick="location.reload()">KEMBALI KE MENU</button>
+        </div>
+
+        <div id="map-screen" class="screen">
+            <h1 style="margin-bottom: 30px;">Album Kita</h1>
+            <div class="film-strip">
+                <div>
+                    <div class="film-frame"><div class="polaroid-img" style="background-image: url('foto1.jpg'); height: 150px;">[Foto Ciledug]</div></div>
+                    <div class="film-caption">1. Berawal dari LPK YBHS...</div>
+                </div>
+                <div>
+                    <div class="film-frame"><div class="polaroid-img" style="background-image: url('foto2.jpg'); height: 150px;">[Foto Kencan]</div></div>
+                    <div class="film-caption">2. Kencan pertama kita</div>
+                </div>
+            </div>
+            <button class="btn" style="margin-top: 30px;" onclick="showScreen('main-menu')">KEMBALI</button>
+        </div>
+    </div>
+
+    <script>
+        const stageData = [
+            { msg: "Pertemuan kita adalah hal terbaik yang pernah terjadi.", img: "stage1.jpg", caption: "Awal Cerita" },
+            { msg: "Terima kasih sudah selalu sabar dan ada buat aku.", img: "stage2.jpg", caption: "Senyum Manismu" },
+            { msg: "Dan hari ini adalah hari spesialmu...", img: "stage3.jpg", caption: "Menuju Hari Ini" }
+        ];
+
+        let currentStage = 1;
+        let score = 0;
+        let targetScore = 0;
+        let activeGameType = '';
+        let gameTimeouts = [];
+        let memoryFlippedCards = [];
+        let memoryMatchedPairs = 0;
+        const memoryEmojis = ['🌹', '💌', '🧸', '💍', '🎀', '🍫'];
+
+        function clearGameTimeouts() {
+            gameTimeouts.forEach(t => clearTimeout(t));
+            gameTimeouts = [];
+        }
+
+        function playSFX(type) {
+            try {
+                const sfx = document.getElementById(type === 'pop' ? 'sfx-pop' : 'sfx-win');
+                sfx.currentTime = 0;
+                sfx.volume = type === 'pop' ? 0.3 : 0.6;
+                sfx.play();
+            } catch(e) {}
+        }
+
+        function playSelectedBGM() {
+            const bgm = document.getElementById('bg-music');
+            const selector = document.getElementById('bgm-select');
+            
+            // Perbaikan Logika: Pastikan SRC benar-benar terupdate
+            const currentSrc = bgm.src.split('/').pop();
+            const selectedSrc = selector.value.split('/').pop();
+
+            if (currentSrc !== selectedSrc) {
+                bgm.src = selector.value;
+                bgm.load();
+            }
+            
+            bgm.volume = 0.4;
+            bgm.play().catch(e => console.log("Menunggu interaksi user untuk musik"));
+        }
+
+        function showScreen(screenId) {
+            // Musik dipicu saat pindah layar (interaksi user)
+            if(screenId !== 'main-menu') {
+                playSelectedBGM();
+            }
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            document.querySelector('.app-container').scrollTo(0, 0); 
+        }
+
+        function startGame(gameType) {
+            activeGameType = gameType;
+            currentStage = 1;
+            setupStage();
+            showScreen('game-screen');
+        }
+
+        function setupStage() {
+            score = 0;
+            clearGameTimeouts();
+            document.getElementById('score').innerText = score;
+            document.getElementById('stage-title').innerText = `Level ${currentStage}`;
+            
+            document.getElementById('game-catch').classList.add('hidden');
+            document.getElementById('game-guess').classList.add('hidden');
+            document.getElementById('game-memory').classList.add('hidden');
+            document.getElementById('game-dynamic').classList.add('hidden');
+            document.getElementById('game-dynamic').innerHTML = '';
+
+            if (activeGameType === 'catch') {
+                targetScore = currentStage * 5; 
+                document.getElementById('target-score').innerText = targetScore;
+                document.getElementById('game-catch').classList.remove('hidden');
+                spawnCatchTarget();
+            } else if (activeGameType === 'guess') {
+                targetScore = 1; 
+                document.getElementById('target-score').innerText = targetScore;
+                document.getElementById('game-guess').classList.remove('hidden');
+                setupGuessGame();
+            } else if (activeGameType === 'memory') {
+                targetScore = currentStage + 1; 
+                document.getElementById('target-score').innerText = targetScore;
+                document.getElementById('game-memory').classList.remove('hidden');
+                setupMemoryGame();
+            } else {
+                document.getElementById('game-dynamic').classList.remove('hidden');
+                setupDynamicGames();
+            }
+        }
+
+        function spawnCatchTarget() {
+            if(activeGameType !== 'catch') return;
+            const target = document.getElementById('target');
+            target.classList.remove('hidden');
+            const area = document.getElementById('game-catch');
+            const randomX = Math.floor(Math.random() * (area.clientWidth - 50));
+            const randomY = Math.floor(Math.random() * (area.clientHeight - 50));
+            target.style.left = randomX + 'px'; target.style.top = randomY + 'px';
+        }
+
+        function hitCatchTarget(e) {
+            playSFX('pop');
+            score++;
+            document.getElementById('score').innerText = score;
+            document.getElementById('target').classList.add('hidden');
+            if(score >= targetScore) {
+                setTimeout(stageComplete, 300);
+            } else {
+                let speed = currentStage === 1 ? 550 : 350;
+                gameTimeouts.push(setTimeout(spawnCatchTarget, speed)); 
+            }
+        }
+
+        function setupGuessGame() {
+            const container = document.getElementById('game-guess');
+            container.innerHTML = '';
+            let boxCount = currentStage === 1 ? 4 : 9;
+            let winningIndex = Math.floor(Math.random() * boxCount);
+            for (let i = 0; i < boxCount; i++) {
+                let box = document.createElement('div');
+                box.className = 'gift-box'; box.innerText = '🎁';
+                box.onclick = function() {
+                    playSFX('pop');
+                    if (i === winningIndex) {
+                        box.innerText = '💖'; score = 1;
+                        document.getElementById('score').innerText = "1";
+                        setTimeout(stageComplete, 600);
+                    } else { box.innerText = '💨'; box.style.opacity = '0.5'; box.onclick = null; }
+                };
+                container.appendChild(box);
+            }
+        }
+
+        function setupMemoryGame() {
+            const container = document.getElementById('game-memory');
+            container.innerHTML = '';
+            memoryFlippedCards = []; memoryMatchedPairs = 0;
+            let selectedEmojis = memoryEmojis.slice(0, targetScore);
+            let deck = [...selectedEmojis, ...selectedEmojis].sort(() => Math.random() - 0.5);
+            deck.forEach(emoji => {
+                let card = document.createElement('div');
+                card.className = 'memory-card'; card.dataset.emoji = emoji;
+                card.innerHTML = `<span>${emoji}</span>`;
+                card.onclick = function() {
+                    if(this.classList.contains('flipped') || memoryFlippedCards.length === 2) return;
+                    playSFX('pop'); this.classList.add('flipped');
+                    memoryFlippedCards.push(this);
+                    if(memoryFlippedCards.length === 2) {
+                        let [c1, c2] = memoryFlippedCards;
+                        if(c1.dataset.emoji === c2.dataset.emoji) {
+                            memoryMatchedPairs++; score++;
+                            document.getElementById('score').innerText = score;
+                            memoryFlippedCards = [];
+                            if(memoryMatchedPairs === targetScore) setTimeout(stageComplete, 800);
+                        } else {
+                            setTimeout(() => { c1.classList.remove('flipped'); c2.classList.remove('flipped'); memoryFlippedCards = []; }, 800);
+                        }
+                    }
+                };
+                container.appendChild(card);
+            });
+        }
+
+        function setupDynamicGames() {
+            const board = document.getElementById('game-dynamic');
+            if(activeGameType === 'spam') {
+                targetScore = currentStage * 15;
+                document.getElementById('target-score').innerText = targetScore;
+                let btn = document.createElement('div');
+                btn.innerText = '💖'; btn.style.fontSize = '5rem'; btn.style.cursor = 'pointer';
+                btn.onclick = () => {
+                    playSFX('pop'); score++;
+                    document.getElementById('score').innerText = score;
+                    if(score >= targetScore) setTimeout(stageComplete, 200);
+                };
+                board.appendChild(btn);
+            } else if(activeGameType === 'find') {
+                targetScore = 1; document.getElementById('target-score').innerText = targetScore;
+                let count = 20; let winIdx = Math.floor(Math.random() * count);
+                for(let i=0; i<count; i++) {
+                    let item = document.createElement('div');
+                    item.innerText = i === winIdx ? '💍' : '🌸';
+                    item.style.fontSize = '2rem'; item.style.cursor = 'pointer';
+                    item.onclick = () => {
+                        if(i === winIdx) { playSFX('pop'); score=1; setTimeout(stageComplete, 400); }
+                        else item.style.opacity = '0.2';
+                    };
+                    board.appendChild(item);
+                }
+            }
+            // Tambahkan logika game lain di sini jika diperlukan sesuai fungsi setupDynamicGames sebelumnya
+        }
+
+        function stageComplete() {
+            clearGameTimeouts();
+            playSFX('win');
+            let currentData = stageData[currentStage - 1];
+            if (currentStage < stageData.length) {
+                document.getElementById('stage-message').innerText = currentData.msg;
+                document.getElementById('reward-caption').innerText = currentData.caption;
+                showScreen('achievement-screen');
+            } else {
+                setTimeout(() => showScreen('ending-screen'), 1200); 
+            }
+        }
+
+        function nextStage() {
+            currentStage++;
+            setupStage();
+            showScreen('game-screen');
+        }
+    </script>
+</body>
+</html>
